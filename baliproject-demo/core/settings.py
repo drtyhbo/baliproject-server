@@ -1,5 +1,3 @@
-# Django settings for core project.
-
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
@@ -75,13 +73,9 @@ STATICFILES_DIRS = (
 
 # S3 storage
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
-#AWS_S3_SECURE_URLS = False
 AWS_QUERYSTRING_AUTH = False
-AWS_S3_ACCESS_KEY_ID = 'AKIAILPT3UIOMSYLEYDA'
-AWS_S3_SECRET_ACCESS_KEY = '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'
 AWS_STORAGE_BUCKET_NAME = 'baliproject-demo'
 
-# Sentry
 RAVEN_CONFIG = {
     'dsn': 'http://52a7e9edebd04d569fb826e45b6286a2:0104e3006c7b48908fa4e597bcfb8b84@sentry.drtyhbo.net/1',
 }
@@ -131,14 +125,33 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
 
     'api',
-    'gunicorn',
 
     'raven.contrib.django.raven_compat',
 
     'storages',
 )
 
+
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': '/tmp/django.log',
+        },
+    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
 
 # Set up raven to capture exceptions.
 from raven.contrib.django.raven_compat.models import client
