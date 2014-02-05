@@ -1,4 +1,4 @@
-# Django settings for webapps project.
+# Django settings for core project.
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -11,9 +11,9 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'live_mockup',
-        'USER': 'django',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'baliproject_demo',
+        'USER': 'baliproject',
         'PASSWORD': '',
         'HOST': '',
         'PORT': '',
@@ -74,16 +74,16 @@ STATICFILES_DIRS = (
 )
 
 # S3 storage
-DEFAULT_FILE_STORAGE = 'storages.backends.s3.S3Storage'
-AWS_S3_SECURE_URLS = False
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+#AWS_S3_SECURE_URLS = False
 AWS_QUERYSTRING_AUTH = False
 AWS_S3_ACCESS_KEY_ID = 'AKIAILPT3UIOMSYLEYDA'
 AWS_S3_SECRET_ACCESS_KEY = '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'
-AWS_STORAGE_BUCKET_NAME = 'demo-webapps'
+AWS_STORAGE_BUCKET_NAME = 'baliproject-demo'
 
 # Sentry
 RAVEN_CONFIG = {
-  'dsn': 'http://bf7b48f47dc5431fbc4031e91da1806d:294f1f0478ce4d548c4da810f2df0fba@ec2-54-200-229-206.us-west-2.compute.amazonaws.com:8000/1',
+    'dsn': 'http://52a7e9edebd04d569fb826e45b6286a2:0104e3006c7b48908fa4e597bcfb8b84@sentry.drtyhbo.net/1',
 }
 
 # List of finder classes that know how to find static files in
@@ -110,14 +110,12 @@ MIDDLEWARE_CLASSES = (
     #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    # Uncomment the next line for simple clickjacking protection:
-    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-ROOT_URLCONF = 'webapps.urls'
+ROOT_URLCONF = 'core.urls'
 
 # Python dotted path to the WSGI application used by Django's runserver.
-WSGI_APPLICATION = 'webapps.wsgi.application'
+WSGI_APPLICATION = 'core.wsgi.application'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
@@ -131,37 +129,17 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'api',
     'gunicorn',
-    'live_mockup',
-    'storages',
+
     'raven.contrib.django.raven_compat',
-    # Uncomment the next line to enable the admin:
-    # 'django.contrib.admin',
-    # Uncomment the next line to enable admin documentation:
-    # 'django.contrib.admindocs',
+
+    'storages',
 )
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'filters': {
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse'
-        }
-    },
-    'handlers': {
-        'sentry': {
-            'level': 'ERROR',
-            'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
-        },
-    },
-    'loggers': {
-        'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
-            'propagate': True,
-        },
-    },
-}
+# Set up raven to capture exceptions.
+from raven.contrib.django.raven_compat.models import client
+client.captureException()
