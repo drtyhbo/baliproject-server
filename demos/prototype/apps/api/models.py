@@ -5,7 +5,7 @@ from django.db import models
 from uuid import uuid4
 
 class Asset(models.Model):
-  uid = models.CharField(max_length=32)
+  uid = models.CharField(max_length=40)
   name = models.CharField(max_length=50)
   latitude = models.FloatField(blank=True, null=True)
   longitude = models.FloatField(blank=True, null=True)

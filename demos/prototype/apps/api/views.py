@@ -14,7 +14,5 @@ def add_asset(request):
           date_taken=datetime.datetime.fromtimestamp(
               form.cleaned_data['date_taken']))
       asset.save()
-      return HttpResponse('a-ok')
-  else:
-    form = AddAssetForm()
-  return HttpResponse('<form method="POST" action="." enctype="multipart/form-data">%s<input type="submit" value="submit"></form>' % form)
+      return HttpResponse('success')
+  return HttpResponse('error')
