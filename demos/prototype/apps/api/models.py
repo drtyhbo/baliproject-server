@@ -4,6 +4,8 @@ from django.core.files.storage import default_storage
 from django.db import models
 from uuid import uuid4
 
+S3_URL = 'https://s3-us-west-1.amazonaws.com/baliproject-demo/%s/%s'
+
 class Asset(models.Model):
   uid = models.CharField(max_length=40)
   name = models.CharField(max_length=50)
@@ -29,3 +31,6 @@ class Asset(models.Model):
     file.close()
 
     return asset
+
+  def get_asset_path(self):
+    return S3_URL % (self.uid, self.name)

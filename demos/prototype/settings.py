@@ -124,7 +124,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'apps.api',
+    'prototype.apps.api',
 
     'raven.contrib.django.raven_compat',
 
