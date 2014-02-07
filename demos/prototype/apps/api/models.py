@@ -7,13 +7,17 @@ from uuid import uuid4
 S3_URL = 'https://s3-us-west-1.amazonaws.com/baliproject-demo/%s/%s'
 
 class User(models.Model):
-  uid = models.CharField(max_length=40)
-  name = models.CharField(max_length=64)
-  email = models.CharField(max_length=128)
+  uid = models.CharField(db_index=True, max_length=40)
+  name = models.CharField(max_length=64, blank=True, null=True)
+  email = models.CharField(max_length=128, blank=True, null=True)
   thumbnail_url = models.CharField(max_length=256, blank=True, null=True)
 
+class Picture(models.Model):
+  user = models.ForeignKey('User')
+  asset = models.ForeignKey('Asset')
+
 class Asset(models.Model):
-  uid = models.CharField(max_length=40)
+  uid = models.CharField(db_index=True, max_length=40)
   name = models.CharField(max_length=50)
   latitude = models.FloatField(blank=True, null=True)
   longitude = models.FloatField(blank=True, null=True)

@@ -6,7 +6,7 @@ import time
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from .forms import AddAssetForm, CreateUserForm
-from .models import Asset, User
+from .models import Asset, Picture, User
 
 from django.db.models.query import QuerySet
 
@@ -86,10 +86,17 @@ def add_user(request):
   if request.method == 'POST':
     form = CreateUserForm(request.POST, request.FILES)
     if form.is_valid():
-      user = User(uid = form.cleaned_data['uid'],
-          name = form.cleaned_data['name'],
-          email = form.cleaned_data['email'])
+      # The user object may already exist with only the uid field filled
+      # in.
+      try:
+        user = User.objects.get(uid=form.cleaned_data['uid'])
+      except ObjectDoesNotExist:
+        user = User(uid = form.cleaned_data['uid'])
+
+      user.name = form.cleaned_data['name']
+      user.email = form.cleaned_data['email']
       user.save()
+
       return json_response({
         'id': user.id,
         'name': user.name,
@@ -110,4 +117,61 @@ def get_user(request):
         'name': user.name,
         'thumbnailSrc': None
       })
+  return json_response(False)
+
+##
+#
+# Picture API
+#
+##
+def add_picture(request):
+  if request.method == 'POST' and request.POST.get('uid', None) and \
+      request.POST.getlist('id[]', None):
+    uid = request.POST.get('uid')
+    asset_ids = request.POST.getlist('id[]')
+
+    # This might be called before a user object has been created.
+    try:
+      user = User.objects.get(uid=uid)
+    except ObjectDoesNotExist:
+      user = User.objects.create(uid=uid)
+
+    ret = []
+
+    assets = Asset.objects.filter(pk__in=asset_ids)
+    for asset in assets:
+      picture = Picture.objects.create(user=user,
+          asset=asset)
+      ret.append({
+        'id': picture.id,
+        'assetId': asset.id,
+        'pictureSrc': asset.get_asset_path(),
+        'thumbnailPictureSrc': asset.get_asset_path()
+      })
+    return json_response(ret)
+
+  return json_response(False)
+
+def get_all_pictures(request):
+  if request.method == 'POST' and request.POST.get('uid', None):
+    uid = request.POST.get('uid')
+    
+    try:
+      user = User.objects.get(uid=uid)
+    except ObjectDoesNotExist:
+      user = None
+
+    if user:
+      ret = []
+
+      pictures = Picture.objects.filter(user=user)
+      for picture in pictures:
+        ret.append({
+          'id': picture.id,
+          'assetId': picture.asset.id,
+          'pictureSrc': picture.asset.get_asset_path(),
+          'thumbnailPictureSrc': picture.asset.get_asset_path()
+        })
+      return json_response(ret)
+
   return json_response(False)
