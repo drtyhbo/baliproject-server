@@ -1,12 +1,14 @@
 import json
 import calendar
 import datetime
+import logging
 import time
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.http import HttpResponse
 from .forms import AddAssetForm, CreateUserForm
-from .models import Asset, Picture, User
+from .models import Asset, Moment, Picture, User
 
 from django.db.models.query import QuerySet
 
@@ -47,7 +49,14 @@ def add_asset(request):
   if request.method == 'POST':
     form = AddAssetForm(request.POST, request.FILES)
     if form.is_valid():
-      asset = Asset.create(uid=form.cleaned_data['uid'],
+      uid = form.cleaned_data['uid']
+      # This might be called before a user object has been created.
+      try:
+        user = User.objects.get(uid=uid)
+      except ObjectDoesNotExist:
+        user = User.objects.create(uid=uid)
+
+      asset = Asset.create(user=user,
           asset_file=request.FILES['asset'],
           latitude=form.cleaned_data['latitude'],
           longitude=form.cleaned_data['longitude'],
@@ -62,8 +71,7 @@ def add_asset(request):
 def get_asset(request):
   if request.method == 'POST':
     if request.POST.get('uid', None):
-      uid = request.POST['uid']
-      assets = Asset.objects.filter(uid=uid)
+      assets = Asset.objects.filter(user__uid=request.POST['uid'])
 
       ret = []
       for asset in assets:
@@ -111,6 +119,7 @@ def get_user(request):
       user = User.objects.get(uid=uid)
     except ObjectDoesNotExist:
       user = None
+
     if user:
       return json_response({
         'id': user.id,
@@ -124,6 +133,87 @@ def get_user(request):
 # Picture API
 #
 ##
+
+# Returns true if the two assets should be clustered together.
+def are_assets_clustered(asset1, asset2):
+  return (asset2.date_taken - asset1.date_taken).total_seconds() < 2 * 60 * 60
+
+# Returns a list of lists where each sublist is a set of pictures that are
+# related to eachother. Each of these sublists forms the basis for a moment.
+# The moment field of each Picture object has NOT been populated.
+def get_clustered_pictures_from_assets(assets):
+  clustered_pictures = []
+  current_cluster = []
+  prev_asset = None
+
+  for asset in assets:
+    picture = Picture(asset=asset,
+        user=asset.user)
+    if prev_asset and not are_assets_clustered(prev_asset, asset):
+      clustered_pictures.append(current_cluster)
+      current_cluster = []
+    current_cluster.append(picture)
+    prev_asset = asset
+
+  clustered_pictures.append(current_cluster)
+
+  return clustered_pictures
+
+# Given a cluster of pictures, returns the moment object that will contain
+# that cluster.
+def get_moment_for_cluster(cluster):
+  time_delta = datetime.timedelta(hours=2)
+  earliest_date = cluster[0].asset.date_taken - time_delta
+  latest_date = cluster[-1].asset.date_taken + time_delta
+
+  # Grab all the moments that fall between the earliest date and the latest
+  # date.
+  moments = Moment.objects.filter(
+      Q(earliest_date__lte=earliest_date) & Q(latest_date__gte=earliest_date) |
+      Q(earliest_date__lte=latest_date) & Q(latest_date__gte=latest_date) |
+      Q(earliest_date__gte=earliest_date) & Q(latest_date__lte=latest_date) |
+      Q(earliest_date__lte=earliest_date) & Q(latest_date__gte=latest_date)).order_by('latest_date')
+
+  moment = None
+
+  # Create a new moment.
+  if len(moments) == 0:
+    moment = Moment.objects.create(user=cluster[0].user,
+        earliest_date=earliest_date,
+        latest_date=latest_date)
+  # Only one moment, update this dude.
+  elif len(moments) == 1:
+    moment = moments[0]
+    if earliest_date < moment.earliest_date:
+      moment.earliest_date = earliest_date
+    if latest_date > moment.latest_date:
+      moment.latest_date = latest_date
+  # Multiple moments, create a new moment, and delete the old ones.
+  else:
+    moment = Moment.objects.create(user=cluster[0].user,
+        earliest_date=moments[0].earliest_date < earliest_date and \
+            moments[0].earliest_date or earliest_date,
+        latest_date=moments[-1].latest_date > latest_date and \
+            moments[-1].latest_date or latest_date)
+    Picture.objects.filter(moment__in=moments).update(moment=moment)
+
+  return moment 
+
+# Given a list of asset_ids, returns a list of picture objects that have been
+# saved to the database.
+def create_pictures_from_asset_ids(asset_ids):
+  assets = Asset.objects.filter(pk__in=asset_ids).order_by('date_taken')
+  clustered_pictures = get_clustered_pictures_from_assets(assets)
+
+  pictures = []
+  for cluster in clustered_pictures:
+    moment = get_moment_for_cluster(cluster)
+    for picture in cluster:
+      picture.moment = moment
+      picture.save()
+      pictures.append(picture)
+  return pictures
+
 def add_picture(request):
   if request.method == 'POST' and request.POST.get('uid', None) and \
       request.POST.getlist('id[]', None):
@@ -136,12 +226,11 @@ def add_picture(request):
     except ObjectDoesNotExist:
       user = User.objects.create(uid=uid)
 
-    ret = []
+    pictures = create_pictures_from_asset_ids(asset_ids)
 
-    assets = Asset.objects.filter(pk__in=asset_ids)
-    for asset in assets:
-      picture = Picture.objects.create(user=user,
-          asset=asset)
+    ret = []
+    for picture in pictures:
+      asset = picture.asset
       ret.append({
         'id': picture.id,
         'assetId': asset.id,

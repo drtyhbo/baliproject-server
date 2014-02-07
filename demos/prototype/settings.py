@@ -136,22 +136,40 @@ INSTALLED_APPS = (
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': '/tmp/django.log',
-        },
+  'version': 1,
+  'disable_existing_loggers': True,
+
+  'formatters': {
+    'console': {
+      'format': '[%(asctime)s][%(levelname)s] %(name)s %(filename)s:%(funcName)s:%(lineno)d | %(message)s',
+      'datefmt': '%H:%M:%S',
     },
-    'loggers': {
-        'django.request': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
+  },
+
+  'handlers': {
+    'console': {
+      'level': 'DEBUG',
+      'class': 'logging.StreamHandler',
+      'formatter': 'console'
     },
+    'sentry': {
+      'level': 'ERROR',
+      'class': 'raven.handlers.logging.SentryHandler',
+      'dsn': 'http://52a7e9edebd04d569fb826e45b6286a2:0104e3006c7b48908fa4e597bcfb8b84@sentry.drtyhbo.net/1',
+    },
+  },
+
+  'loggers': {
+    '': {
+      'handlers': ['console', 'sentry'],
+      'level': 'DEBUG',
+      'propagate': False,
+    },
+    'api': {
+      'level': 'DEBUG',
+      'propagate': True,
+    },
+  }
 }
 
 # Set up raven to capture exceptions.
