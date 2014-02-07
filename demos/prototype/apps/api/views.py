@@ -3,6 +3,7 @@ import calendar
 import datetime
 import time
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from .forms import AddAssetForm, CreateUserForm
 from .models import Asset, User
@@ -89,13 +90,20 @@ def add_user(request):
           name = form.cleaned_data['name'],
           email = form.cleaned_data['email'])
       user.save()
-      return json_response(True)
+      return json_response({
+        'id': user.id,
+        'name': user.name,
+        'thumbnailSrc': None
+      })
   return json_response(False)
 
 def get_user(request):
   if request.method == 'POST' and request.POST.get('uid', None):
     uid = request.POST.get('uid')
-    user = User.objects.get(uid=uid)
+    try:
+      user = User.objects.get(uid=uid)
+    except ObjectDoesNotExist:
+      user = None
     if user:
       return json_response({
         'id': user.id,
