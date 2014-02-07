@@ -4,8 +4,8 @@ import datetime
 import time
 
 from django.http import HttpResponse
-from .forms import AddAssetForm
-from .models import Asset
+from .forms import AddAssetForm, CreateUserForm
+from .models import Asset, User
 
 from django.db.models.query import QuerySet
 
@@ -33,6 +33,15 @@ def encoding_defaults(o):
 
   raise TypeError
 
+def json_response(data):
+  return HttpResponse('%s' % json.dumps(data, default=encoding_defaults),
+    mimetype="application/json")
+
+##
+#
+# Asset API
+#
+##
 def add_asset(request):
   if request.method == 'POST':
     form = AddAssetForm(request.POST, request.FILES)
@@ -44,13 +53,15 @@ def add_asset(request):
           date_taken=datetime.datetime.fromtimestamp(
               form.cleaned_data['date_taken']))
       asset.save()
+      # These return values go to the 'moments' app in xcode. To update here
+      # you must update there.
       return HttpResponse('success')
   return HttpResponse('error')
 
 def get_asset(request):
-  if request.method == 'GET':
-    if request.GET.get('uid', None):
-      uid = request.GET['uid']
+  if request.method == 'POST':
+    if request.POST.get('uid', None):
+      uid = request.POST['uid']
       assets = Asset.objects.filter(uid=uid)
 
       ret = []
@@ -62,9 +73,33 @@ def get_asset(request):
           'dateTaken': calendar.timegm(asset.date_taken.utctimetuple()),
           'url': asset.get_asset_path()
         })
-      response = HttpResponse('%s' % json.dumps(ret, default=encoding_defaults),
-          mimetype="application/json")
-  else:
-    response = HttpResponse('error')
-  response['Access-Control-Allow-Origin'] = 'null'
-  return response
+      return json_response(ret)
+  return json_response(False)
+
+##
+#
+# User API
+#
+##
+def add_user(request):
+  if request.method == 'POST':
+    form = CreateUserForm(request.POST, request.FILES)
+    if form.is_valid():
+      user = User(uid = form.cleaned_data['uid'],
+          name = form.cleaned_data['name'],
+          email = form.cleaned_data['email'])
+      user.save()
+      return json_response(True)
+  return json_response(False)
+
+def get_user(request):
+  if request.method == 'POST' and request.POST.get('uid', None):
+    uid = request.POST.get('uid')
+    user = User.objects.get(uid=uid)
+    if user:
+      return json_response({
+        'id': user.id,
+        'name': user.name,
+        'thumbnailSrc': None
+      })
+  return json_response(False)

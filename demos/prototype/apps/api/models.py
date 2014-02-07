@@ -6,6 +6,12 @@ from uuid import uuid4
 
 S3_URL = 'https://s3-us-west-1.amazonaws.com/baliproject-demo/%s/%s'
 
+class User(models.Model):
+  uid = models.CharField(max_length=40)
+  name = models.CharField(max_length=64)
+  email = models.CharField(max_length=128)
+  thumbnail_url = models.CharField(max_length=256, blank=True, null=True)
+
 class Asset(models.Model):
   uid = models.CharField(max_length=40)
   name = models.CharField(max_length=50)
