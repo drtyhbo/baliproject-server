@@ -282,7 +282,7 @@ def get_all_moments(request):
         if user:
             ret = []
 
-            moments = Moment.objects.filter(user=user).order_by('earliest_date')
+            moments = Moment.objects.filter(user=user).order_by('-earliest_date')
             for moment in moments:
                 ret_moment = {
                     'id': moment.id,
