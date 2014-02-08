@@ -16,6 +16,7 @@ class Moment(models.Model):
   user = models.ForeignKey('User')
   earliest_date = models.DateTimeField()
   latest_date = models.DateTimeField()
+  location = models.CharField(max_length=256)
 
 class Asset(models.Model):
   user = models.ForeignKey('User')

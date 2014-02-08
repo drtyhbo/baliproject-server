@@ -7,4 +7,5 @@ urlpatterns = patterns('prototype.apps.api.views',
   url(r'^user/get/$', 'get_user'),
   url(r'^picture/add/$', 'add_picture'),
   url(r'^picture/get/all/$', 'get_all_pictures'),
+  url(r'^moment/get/all/$', 'get_all_moments'),
 )

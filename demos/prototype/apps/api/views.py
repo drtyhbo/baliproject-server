@@ -20,7 +20,7 @@ def encoding_defaults(o):
     return [obj for obj in o]
 
   # datetimes to timestamps
-  if isinstance(o, datetime):
+  if isinstance(o, datetime.datetime):
     return int(time.mktime(o.timetuple()))
 
   # models that expect to be serialized must define their own to_dict() method
@@ -79,7 +79,7 @@ def get_asset(request):
           'id': asset.id,
           'latitude': asset.latitude,
           'longitude': asset.longitude,
-          'dateTaken': calendar.timegm(asset.date_taken.utctimetuple()),
+          'dateTaken': asset.date_taken,
           'url': asset.get_asset_path()
         })
       return json_response(ret)
@@ -264,3 +264,40 @@ def get_all_pictures(request):
       return json_response(ret)
 
   return json_response(False)
+
+##
+#
+# Moments API
+#
+##
+def get_all_moments(request):
+    if request.method == 'POST' and request.POST.get('uid', None):
+        uid = request.POST.get('uid')
+    
+        try:
+            user = User.objects.get(uid=uid)
+        except ObjectDoesNotExist:
+            user = None
+
+        if user:
+            ret = []
+
+            moments = Moment.objects.filter(user=user).order_by('earliest_date')
+            for moment in moments:
+                ret_moment = {
+                    'id': moment.id,
+                    'timestamp': moment.earliest_date,
+                    'location': moment.location,
+                    'pictures': []
+                }
+                pictures = Picture.objects.filter(moment=moment).order_by('asset__date_taken')
+                for picture in pictures:
+                    ret_moment['pictures'].append({
+                        'id': picture.id,
+                        'assetId': picture.asset.id,
+                        'pictureSrc': picture.asset.get_asset_path(),
+                        'thumbnailPictureSrc': picture.asset.get_asset_path()
+                    })
+                ret.append(ret_moment)
+            return json_response(ret)
+    return json_response(False)
