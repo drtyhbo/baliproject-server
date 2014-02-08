@@ -28,6 +28,14 @@ class Asset(models.Model):
   @staticmethod
   def create(user, asset_file, latitude, longitude, date_taken):
     name = '%s%s' % (uuid4().hex, os.path.splitext(asset_file.name)[1])
+
+    # Upload the file to s3. Do this first so we're not left with orphaned
+		# rows in the DB in case it fails.
+    file = default_storage.open('%s/%s' % (user.uid, name), 'w')
+    for chunk in asset_file.chunks():
+      file.write(chunk)
+    file.close()
+
     asset = Asset.objects.create(
       user=user,
       name=name,
@@ -35,12 +43,6 @@ class Asset(models.Model):
       longitude=longitude,
       date_taken=date_taken,
     )
-
-    # Upload the file to s3.
-    file = default_storage.open('%s/%s' % (user.uid, name), 'w')
-    for chunk in asset_file.chunks():
-      file.write(chunk)
-    file.close()
 
     return asset
 
