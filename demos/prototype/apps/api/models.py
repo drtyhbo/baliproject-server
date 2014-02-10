@@ -51,6 +51,7 @@ class Asset(models.Model):
   latitude = models.FloatField(blank=True, null=True)
   longitude = models.FloatField(blank=True, null=True)
   date_taken = models.DateTimeField()
+  date_uploaded = models.DateTimeField(auto_now_add=True)
 
   @staticmethod
   def create(user, asset_file, latitude, longitude, date_taken):

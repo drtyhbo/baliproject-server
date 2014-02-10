@@ -1,13 +1,13 @@
 import json
 import calendar
 import datetime
+import forms
 import logging
 import time
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import HttpResponse
-from .forms import AddAssetForm, CreateUserForm
 from .models import Asset, Moment, Picture, User
 
 from django.db.models.query import QuerySet
@@ -47,7 +47,7 @@ def json_response(data):
 ##
 def add_asset(request):
   if request.method == 'POST':
-    form = AddAssetForm(request.POST, request.FILES)
+    form = forms.AddAssetForm(request.POST, request.FILES)
     if form.is_valid():
       uid = form.cleaned_data['uid']
       # This might be called before a user object has been created.
@@ -70,18 +70,32 @@ def add_asset(request):
 
 def get_asset(request):
   if request.method == 'POST':
-    if request.POST.get('uid', None):
-      assets = Asset.objects.filter(user__uid=request.POST['uid'])
+    form = forms.GetAssetsForm(request.POST)
+    if form.is_valid():
+      uid = form.cleaned_data['uid']
+      ts = datetime.datetime.utcfromtimestamp(form.cleaned_data['ts'])
 
-      ret = []
-      for asset in assets:
-        ret.append({
-          'id': asset.id,
-          'latitude': asset.latitude,
-          'longitude': asset.longitude,
-          'dateTaken': asset.date_taken,
-          'url': asset.get_asset_path()
-        })
+      # Only grab assets that were uploaded after the provided timestamp to
+      # speed things up.
+      assets = Asset.objects.filter(user__uid=uid, date_uploaded__gt=ts).order_by('-date_uploaded')
+
+      # Always return the timestamp and list of assets to simplify the
+      # frontend code.
+      ret = {
+        'ts': ts,
+        'assets': []
+      }
+      if assets.count() > 0:
+        ret['ts'] = assets[0].date_uploaded
+        for asset in assets:
+          ret['assets'].append({
+            'id': asset.id,
+            'latitude': asset.latitude,
+            'longitude': asset.longitude,
+            'dateTaken': asset.date_taken,
+            'url': asset.get_asset_path(),
+            'dateUploaded': asset.date_uploaded
+          })
       return json_response(ret)
   return json_response(False)
 
@@ -92,7 +106,7 @@ def get_asset(request):
 ##
 def add_user(request):
   if request.method == 'POST':
-    form = CreateUserForm(request.POST, request.FILES)
+    form = forms.CreateUserForm(request.POST)
     if form.is_valid():
       # The user object may already exist with only the uid field filled
       # in.

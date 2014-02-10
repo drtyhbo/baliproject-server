@@ -7,6 +7,10 @@ class AddAssetForm(forms.Form):
   longitude = forms.FloatField(required=False)
   date_taken = forms.IntegerField()
 
+class GetAssetsForm(forms.Form):
+  uid = forms.CharField(max_length=40)
+  ts = forms.IntegerField()
+
 class CreateUserForm(forms.Form):
   uid = forms.CharField(max_length=40)
   name = forms.CharField(max_length=64)
