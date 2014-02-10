@@ -1,8 +1,11 @@
+import json
 import os
+import urllib2
 
 from django.core.files.storage import default_storage
 from django.db import models
 from uuid import uuid4
+from prototype.utils.location import get_country_name_from_code, get_state_name_from_code
 
 S3_URL = 'https://s3-us-west-1.amazonaws.com/baliproject-demo/%s/%s'
 
@@ -17,6 +20,30 @@ class Moment(models.Model):
   earliest_date = models.DateTimeField()
   latest_date = models.DateTimeField()
   location = models.CharField(max_length=256)
+
+  def determine_location(self):
+    if self.location:
+      return
+
+    pictures = Picture.objects.filter(moment=self).exclude(asset__latitude=0,asset__longitude=0).order_by('asset__date_taken')
+    if pictures.count() > 0:
+      asset = pictures[0].asset
+      geocode_url = 'http://open.mapquestapi.com/geocoding/v1/reverse?key=%s&location=%f,%f' % ('Fmjtd%7Cluur216ynq%2C70%3Do5-90tl1f', asset.latitude, asset.longitude)
+      response = urllib2.urlopen(geocode_url)
+      if response:
+        results = json.loads(response.read())['results']
+        location = results[0]['locations'][0]
+
+        city = location['adminArea5']
+        state = location['adminArea3']
+        country = location['adminArea1']
+
+        if country == 'US':
+          self.location = '%s, %s' % (city, get_state_name_from_code(state))
+        else:
+          self.location = '%s, %s' % (city, get_country_name_from_code(country))
+
+        self.save()
 
 class Asset(models.Model):
   user = models.ForeignKey('User')

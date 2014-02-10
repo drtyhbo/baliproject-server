@@ -21,7 +21,7 @@ def encoding_defaults(o):
 
   # datetimes to timestamps
   if isinstance(o, datetime.datetime):
-    return calendar.timegm(future.utctimetuple())
+    return calendar.timegm(o.utctimetuple())
 
   # models that expect to be serialized must define their own to_dict() method
   # OR set an explicit method to use (encode_with), which will take precedence
@@ -212,6 +212,7 @@ def create_pictures_from_asset_ids(asset_ids):
       picture.moment = moment
       picture.save()
       pictures.append(picture)
+    moment.determine_location()
   return pictures
 
 def add_picture(request):
