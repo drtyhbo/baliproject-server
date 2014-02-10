@@ -11,6 +11,10 @@ class GetAssetsForm(forms.Form):
   uid = forms.CharField(max_length=40)
   ts = forms.IntegerField()
 
+class GetPicturesForm(forms.Form):
+  uid = forms.CharField(max_length=40)
+  ts = forms.IntegerField()
+
 class CreateUserForm(forms.Form):
   uid = forms.CharField(max_length=40)
   name = forms.CharField(max_length=64)

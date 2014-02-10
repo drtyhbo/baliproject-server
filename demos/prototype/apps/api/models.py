@@ -81,3 +81,4 @@ class Picture(models.Model):
   asset = models.ForeignKey('Asset')
   moment = models.ForeignKey('Moment')
   user = models.ForeignKey('User')
+  date_uploaded = models.DateTimeField(auto_now_add=True)

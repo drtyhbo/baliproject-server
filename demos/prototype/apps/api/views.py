@@ -257,26 +257,33 @@ def add_picture(request):
   return json_response(False)
 
 def get_all_pictures(request):
-  if request.method == 'POST' and request.POST.get('uid', None):
-    uid = request.POST.get('uid')
+  if request.method == 'POST':
+    form = forms.GetPicturesForm(request.POST)
+    if form.is_valid():
+      uid = form.cleaned_data['uid']
+      ts = datetime.datetime.utcfromtimestamp(form.cleaned_data['ts'])
     
-    try:
-      user = User.objects.get(uid=uid)
-    except ObjectDoesNotExist:
-      user = None
+      try:
+        user = User.objects.get(uid=uid)
+      except ObjectDoesNotExist:
+        user = None
 
-    if user:
-      ret = []
+      if user:
+        ret = {
+          'ts': ts,
+          'pictures': []
+        }
 
-      pictures = Picture.objects.filter(user=user)
-      for picture in pictures:
-        ret.append({
-          'id': picture.id,
-          'assetId': picture.asset.id,
-          'pictureSrc': picture.asset.get_asset_path(),
-          'thumbnailPictureSrc': picture.asset.get_asset_path()
-        })
-      return json_response(ret)
+        pictures = Picture.objects.filter(user=user, date_uploaded__gt=ts).order_by('-date_uploaded')
+        if pictures.count() > 0:
+          ret['ts'] = pictures[0].date_uploaded
+          for picture in pictures:
+            ret['pictures'].append({
+              'id': picture.id,
+              'assetId': picture.asset.id,
+              'url': picture.asset.get_asset_path()
+            })
+        return json_response(ret)
 
   return json_response(False)
 
