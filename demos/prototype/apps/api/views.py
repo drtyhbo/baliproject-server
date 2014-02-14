@@ -4,11 +4,12 @@ import datetime
 import forms
 import logging
 import time
+import pdb
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import HttpResponse
-from .models import Asset, Moment, Picture, User
+from .models import Asset, Moment, Picture, User, Share
 
 from django.db.models.query import QuerySet
 
@@ -293,6 +294,7 @@ def get_all_pictures(request):
 #
 ##
 def get_all_moments(request):
+    pdb.set_trace()
     if request.method == 'POST' and request.POST.get('uid', None):
         uid = request.POST.get('uid')
     
@@ -332,15 +334,23 @@ def get_all_moments(request):
 ##    
 def add_share(request):
   if request.method == 'POST' and \
-      request.POST.get('sharedBy', None) and \
       request.POST.getlist('sharedWith[]', None) and \
-      request.POST.getlist('sharedAssetIds[]', None):
-     
-    shared_by_user_id = request.POST.get('sharedBy')
-    shared_with_user_ids = request.POST.getlist('sharedWith[]')
-    shared_asset_ids =request.POST.getlist('sharedAssetIds[]')
+      request.POST.getlist('sharedAssets[]', None):
+    
+    sharedBy = request.POST.get('sharedBy')
+    try:
+      user = User.objects.get(uid=sharedBy)
+    except ObjectDoesNotExist:
+      user = None
 
-    share = create_share(shared_by_user_id, shared_with_user_ids, shared_asset_ids)
+    if user == None:
+      return json_response(False)
+    
+    shared_with_user_ids = request.POST.getlist('sharedWith[]')
+    shared_asset_ids =request.POST.getlist('sharedAssets[]')
+
+    print 'this fucking sucks'
+    share = Share.create(user.id, shared_with_user_ids, shared_asset_ids)
     share.save();
 
     return json_response({
