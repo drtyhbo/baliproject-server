@@ -333,20 +333,20 @@ def get_all_moments(request):
 def add_share(request):
   if request.method == 'POST' and \
       request.POST.get('sharedBy', None) and \
-      request.POST.getlist('sharedWith[]', None) and \ 
+      request.POST.getlist('sharedWith[]', None) and \
       request.POST.getlist('sharedAssetIds[]', None):
      
-			shared_by_user_id = request.POST.get('sharedBy')
-			shared_with_user_ids = request.POST.getlist('sharedWith[]')
-			shared_asset_ids =request.POST.getlist('sharedAssetIds[]')
+    shared_by_user_id = request.POST.get('sharedBy')
+    shared_with_user_ids = request.POST.getlist('sharedWith[]')
+    shared_asset_ids =request.POST.getlist('sharedAssetIds[]')
 
-			share = create_share(shared_by_user_id, shared_with_user_ids, shared_asset_ids)
-			share.save();
+    share = create_share(shared_by_user_id, shared_with_user_ids, shared_asset_ids)
+    share.save();
 
-			return json_response({
-				'id': share.id
-			  })
-	return json_response(False)
+    return json_response({
+      'id': share.id
+      })
+  return json_response(False)
 
 def get_all_shares(request):
     if request.method == 'POST' and request.POST.get('uid', None):
@@ -366,7 +366,7 @@ def get_all_shares(request):
                     'id': share.id,
                     'dateShared': share.date_shared,
                     'sharedBy': share.shared_by_user_id,
-					'sharedAssets': [],
+                    'sharedAssets': [],
                     'sharedWith': []
                 }
                 assets = share.shared_with_user_set.all()
@@ -375,7 +375,7 @@ def get_all_shares(request):
                       'id': asset.id,
                       'url': asset.get_asset_path()
                     })
-				users = share.shared_with_users_set.all()
+                users = share.shared_with_users_set.all()
                 for user in users:
                     ret_moment['sharedWith'].append({
                       'id': user.id,
