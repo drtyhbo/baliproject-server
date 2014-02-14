@@ -9,10 +9,10 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'NAME': 'baliproject_demo',
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'USER': 'postgres',
-        'PASSWORD': 'Eclipse03',
+        'NAME': 'baliproject_demo',
+        'USER': 'baliproject',
+        'PASSWORD': '',
         'HOST': '',
         'PORT': '',
     }
@@ -76,6 +76,10 @@ DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 AWS_QUERYSTRING_AUTH = False
 AWS_STORAGE_BUCKET_NAME = 'baliproject-demo'
 
+RAVEN_CONFIG = {
+    'dsn': 'http://52a7e9edebd04d569fb826e45b6286a2:0104e3006c7b48908fa4e597bcfb8b84@sentry.drtyhbo.net/1',
+}
+
 # List of finder classes that know how to find static files in
 # various locations.
 STATICFILES_FINDERS = (
@@ -106,7 +110,7 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'prototype.urls'
 
 # Python dotted path to the WSGI application used by Django's runserver.
-WSGI_APPLICATION = 'prototype.wsgi.application'	
+WSGI_APPLICATION = 'prototype.wsgi.application'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
@@ -122,8 +126,10 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
 
     'prototype.apps.api',
-	'south',
-    'storages'
+
+    'raven.contrib.django.raven_compat',
+
+    'storages',
 )
 
 
@@ -146,11 +152,16 @@ LOGGING = {
       'class': 'logging.StreamHandler',
       'formatter': 'console'
     },
+    'sentry': {
+      'level': 'ERROR',
+      'class': 'raven.handlers.logging.SentryHandler',
+      'dsn': 'http://52a7e9edebd04d569fb826e45b6286a2:0104e3006c7b48908fa4e597bcfb8b84@sentry.drtyhbo.net/1',
+    },
   },
 
   'loggers': {
     '': {
-      'handlers': ['console'],
+      'handlers': ['console', 'sentry'],
       'level': 'DEBUG',
       'propagate': False,
     },
@@ -160,3 +171,12 @@ LOGGING = {
     },
   }
 }
+
+# Set up raven to capture exceptions.
+from raven.contrib.django.raven_compat.models import client
+client.captureException()
+
+try:
+  from local_settings import *
+except ImportError:
+  pass
