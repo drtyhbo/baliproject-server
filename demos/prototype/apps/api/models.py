@@ -1,6 +1,7 @@
 import json
 import os
 import urllib2
+import pdb
 
 from django.core.files.storage import default_storage
 from django.db import models
@@ -82,3 +83,37 @@ class Picture(models.Model):
   moment = models.ForeignKey('Moment')
   user = models.ForeignKey('User')
   date_uploaded = models.DateTimeField(auto_now_add=True)
+  
+  
+class Share(models.Model):
+  shared_by_user = models.ForeignKey('User', related_name='shared_by_user')
+  shared_with_users = models.ManyToManyField(User, related_name='shared_with_user')
+  shared_assets = models.ManyToManyField(Asset)
+  date_shared = models.DateTimeField(auto_now_add=True)
+  
+  @staticmethod
+  def create(shared_by_userid, shared_with_user_ids, shared_asset_ids):
+    share = Share.objects.create(
+      shared_by_user_id=shared_by_userid
+    )
+    
+    pdb.set_trace()  
+    print share.id
+    
+    print 'what now'
+    
+    #Replace with one query to do multiple inserts
+    for user_id in shared_with_user_ids:
+      share.shared_with_users.add(user_id)
+      
+    print 'stupid django'
+     
+    for shared_asset in shared_asset_ids:
+      share.shared_assets.add(shared_asset)
+     
+
+    return share
+  
+  
+    
+	
