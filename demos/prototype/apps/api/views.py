@@ -324,3 +324,70 @@ def get_all_moments(request):
                 ret.append(ret_moment)
             return json_response(ret)
     return json_response(False)
+
+##
+#
+# Share API
+#
+##    
+def add_share(request):
+  if request.method == 'POST' and \
+      request.POST.get('sharedBy', None) and \
+      request.POST.getlist('sharedWith[]', None) and \ 
+      request.POST.getlist('sharedAssetIds[]', None):
+     
+			shared_by_user_id = request.POST.get('sharedBy')
+			shared_with_user_ids = request.POST.getlist('sharedWith[]')
+			shared_asset_ids =request.POST.getlist('sharedAssetIds[]')
+
+			share = create_share(shared_by_user_id, shared_with_user_ids, shared_asset_ids)
+			share.save();
+
+			return json_response({
+				'id': share.id
+			  })
+	return json_response(False)
+
+def get_all_shares(request):
+    if request.method == 'POST' and request.POST.get('uid', None):
+        uid = request.POST.get('uid')
+    
+        try:
+            user = User.objects.get(uid=uid)
+        except ObjectDoesNotExist:
+            user = None
+
+        if user:
+            ret = []
+
+            shares = Share.objects.filter(shared_by_user=user).order_by('-date_shared')
+            for share in shares:
+                ret_share = {
+                    'id': share.id,
+                    'dateShared': share.date_shared,
+                    'sharedBy': share.shared_by_user_id,
+					'sharedAssets': [],
+                    'sharedWith': []
+                }
+                assets = share.shared_with_user_set.all()
+                for asset in assets:
+                    ret_moment['sharedAssets'].append({
+                      'id': asset.id,
+                      'url': asset.get_asset_path()
+                    })
+				users = share.shared_with_users_set.all()
+                for user in users:
+                    ret_moment['sharedWith'].append({
+                      'id': user.id,
+                      'url': asset.thumbnail_url,
+                    })
+                ret.append(ret_moment)
+            return json_response(ret)
+    return json_response(False)
+ 
+    
+    
+
+    
+    
+    

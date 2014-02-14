@@ -82,3 +82,31 @@ class Picture(models.Model):
   moment = models.ForeignKey('Moment')
   user = models.ForeignKey('User')
   date_uploaded = models.DateTimeField(auto_now_add=True)
+  
+  
+class Share(models.Model):
+  shared_by_user = models.ForeignKey('User', related_name='shared_by_user')
+  shared_with_users = models.ManyToManyField(User, related_name='shared_with_user')
+  shared_assets = models.ManyToManyField(Asset)
+  date_shared = models.DateTimeField(auto_now_add=True)
+  
+  @staticmethod
+  def create(shared_by_user_id, shared_with_user_ids, shared_asset_ids):
+    
+    share = Share.objects.create(
+      shared_by_user=shared_by_user_id
+    )
+    
+    #Replace with one query to do multiple inserts
+    for user_id in shared_with_user_ids:
+      share.shared_with_users.add(user_id)
+     
+    for shared_asset in shared_assets:
+      share.shared_assets.add(shared_asset)
+     
+
+    return asset
+  
+  
+    
+	
