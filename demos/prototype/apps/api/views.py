@@ -2,9 +2,7 @@ import json
 import calendar
 import datetime
 import forms
-import logging
-import time
-import pdb
+from itertools import chain
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -12,6 +10,7 @@ from django.http import HttpResponse
 from .models import Asset, Moment, Picture, User, Share
 
 from django.db.models.query import QuerySet
+    
 
 def encoding_defaults(o):
   if isinstance(o, QuerySet):
@@ -31,7 +30,7 @@ def encoding_defaults(o):
     return dict_repr
 
   # default to to_dict
-  if 'to_dict' in dir(o) and callable(getattr(o,'to_dict')):
+  if 'to_dict' in dir(o) and callable(getattr(o, 'to_dict')):
     dict_repr = o.to_dict()
     return dict_repr
 
@@ -41,11 +40,11 @@ def json_response(data):
   return HttpResponse('%s' % json.dumps(data, default=encoding_defaults),
     mimetype="application/json")
 
-##
+# #
 #
 # Asset API
 #
-##
+# #
 def add_asset(request):
   if request.method == 'POST':
     form = forms.AddAssetForm(request.POST, request.FILES)
@@ -100,11 +99,11 @@ def get_asset(request):
       return json_response(ret)
   return json_response(False)
 
-##
+# #
 #
 # User API
 #
-##
+# #
 def add_user(request):
   if request.method == 'POST':
     form = forms.CreateUserForm(request.POST)
@@ -114,7 +113,7 @@ def add_user(request):
       try:
         user = User.objects.get(uid=form.cleaned_data['uid'])
       except ObjectDoesNotExist:
-        user = User(uid = form.cleaned_data['uid'])
+        user = User(uid=form.cleaned_data['uid'])
 
       user.name = form.cleaned_data['name']
       user.email = form.cleaned_data['email']
@@ -143,11 +142,11 @@ def get_user(request):
       })
   return json_response(False)
 
-##
+# #
 #
 # Picture API
 #
-##
+# #
 
 # Returns true if the two assets should be clustered together.
 def are_assets_clustered(asset1, asset2):
@@ -184,9 +183,9 @@ def get_moment_for_cluster(cluster):
   # Grab all the moments that fall between the earliest date and the latest
   # date.
   moments = Moment.objects.filter(
-      Q(earliest_date__lte=earliest_date) & Q(latest_date__gte=earliest_date) |
-      Q(earliest_date__lte=latest_date) & Q(latest_date__gte=latest_date) |
-      Q(earliest_date__gte=earliest_date) & Q(latest_date__lte=latest_date) |
+      Q(earliest_date__lte=earliest_date) & Q(latest_date__gte=earliest_date) | 
+      Q(earliest_date__lte=latest_date) & Q(latest_date__gte=latest_date) | 
+      Q(earliest_date__gte=earliest_date) & Q(latest_date__lte=latest_date) | 
       Q(earliest_date__lte=earliest_date) & Q(latest_date__gte=latest_date)).order_by('latest_date')
 
   moment = None
@@ -241,6 +240,9 @@ def add_picture(request):
       user = User.objects.get(uid=uid)
     except ObjectDoesNotExist:
       user = User.objects.create(uid=uid)
+      
+    if user == None:
+      return json_response(False)
 
     pictures = create_pictures_from_asset_ids(asset_ids)
 
@@ -288,13 +290,12 @@ def get_all_pictures(request):
 
   return json_response(False)
 
-##
+# #
 #
 # Moments API
 #
-##
+# #
 def get_all_moments(request):
-    pdb.set_trace()
     if request.method == 'POST' and request.POST.get('uid', None):
         uid = request.POST.get('uid')
     
@@ -327,11 +328,11 @@ def get_all_moments(request):
             return json_response(ret)
     return json_response(False)
 
-##
+# #
 #
 # Share API
 #
-##    
+# #    
 def add_share(request):
   if request.method == 'POST' and \
       request.POST.getlist('sharedWith[]', None) and \
@@ -347,9 +348,8 @@ def add_share(request):
       return json_response(False)
     
     shared_with_user_ids = request.POST.getlist('sharedWith[]')
-    shared_asset_ids =request.POST.getlist('sharedAssets[]')
+    shared_asset_ids = request.POST.getlist('sharedAssets[]')
 
-    print 'this fucking sucks'
     share = Share.create(user.id, shared_with_user_ids, shared_asset_ids)
     share.save();
 
@@ -366,33 +366,41 @@ def get_all_shares(request):
             user = User.objects.get(uid=uid)
         except ObjectDoesNotExist:
             user = None
+            
+        if user == None:
+          return json_response(False)
 
-        if user:
-            ret = []
+        
+        user_shares = Share.objects.filter(Q(shared_by_user_id=user.id)) 
+        others_shares =  Share.objects.filter(Q(shared_with_users__id = user.id)) 
 
-            shares = Share.objects.filter(shared_by_user=user).order_by('-date_shared')
-            for share in shares:
-                ret_share = {
-                    'id': share.id,
-                    'dateShared': share.date_shared,
-                    'sharedBy': share.shared_by_user_id,
-                    'sharedAssets': [],
-                    'sharedWith': []
-                }
-                assets = share.shared_with_user_set.all()
-                for asset in assets:
-                    ret_moment['sharedAssets'].append({
-                      'id': asset.id,
-                      'url': asset.get_asset_path()
-                    })
-                users = share.shared_with_users_set.all()
-                for user in users:
-                    ret_moment['sharedWith'].append({
-                      'id': user.id,
-                      'url': asset.thumbnail_url,
-                    })
-                ret.append(ret_moment)
-            return json_response(ret)
+        shares = sorted(chain(user_shares, others_shares), 
+               key= lambda instance: instance.date_shared)
+        
+        
+        ret = []
+        for share in shares:
+            ret_share = {
+                'id': share.id,
+                'dateShared': share.date_shared,
+                'sharedBy': share.shared_by_user_id,
+                'sharedAssets': [],
+                'sharedWith': []
+            }
+            assets = share.shared_assets.all()
+            for asset in assets:
+                ret_share['sharedAssets'].append({
+                  'id': asset.id,
+                  'url': asset.get_asset_path()
+                })
+            users = share.shared_with_users.all()
+            for user in users:
+                ret_share['sharedWith'].append({
+                  'id': user.id,
+                  'url': user.thumbnail_url,
+                })
+            ret.append(ret_share)
+        return json_response(ret)
     return json_response(False)
  
     

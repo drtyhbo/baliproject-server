@@ -1,3 +1,5 @@
+# Django settings for prototype project.
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
@@ -106,7 +108,7 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'prototype.urls'
 
 # Python dotted path to the WSGI application used by Django's runserver.
-WSGI_APPLICATION = 'prototype.wsgi.application'	
+WSGI_APPLICATION = 'prototype.wsgi.application'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
@@ -115,6 +117,7 @@ TEMPLATE_DIRS = (
 )
 
 INSTALLED_APPS = (
+    'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
@@ -126,37 +129,32 @@ INSTALLED_APPS = (
     'storages'
 )
 
-
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 
 LOGGING = {
-  'version': 1,
-  'disable_existing_loggers': True,
-
-  'formatters': {
-    'console': {
-      'format': '[%(asctime)s][%(levelname)s] %(name)s %(filename)s:%(funcName)s:%(lineno)d | %(message)s',
-      'datefmt': '%H:%M:%S',
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse'
+        }
     },
-  },
-
-  'handlers': {
-    'console': {
-      'level': 'DEBUG',
-      'class': 'logging.StreamHandler',
-      'formatter': 'console'
+    'handlers': {
+        'mail_admins': {
+            'level': 'ERROR',
+            'filters': ['require_debug_false'],
+            'class': 'django.utils.log.AdminEmailHandler'
+        }
     },
-  },
-
-  'loggers': {
-    '': {
-      'handlers': ['console'],
-      'level': 'DEBUG',
-      'propagate': False,
-    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['mail_admins'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
     'api': {
       'level': 'DEBUG',
       'propagate': True,
-    },
-  }
+      },
+    }
 }

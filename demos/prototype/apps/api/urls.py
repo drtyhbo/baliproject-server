@@ -13,6 +13,6 @@ urlpatterns = patterns('prototype.apps.api.views',
   url(r'^moment/get/all/$', 'get_all_moments'),
   
   url(r'^share/add/$', 'add_share'),
-  url(r'^share/get/$', 'get_all_shares'),
+  url(r'^share/get/all/$', 'get_all_shares'),
   
 )

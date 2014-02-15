@@ -59,7 +59,7 @@ class Asset(models.Model):
     name = '%s%s' % (uuid4().hex, os.path.splitext(asset_file.name)[1])
 
     # Upload the file to s3. Do this first so we're not left with orphaned
-		# rows in the DB in case it fails.
+    # rows in the DB in case it fails.
     file = default_storage.open('%s/%s' % (user.uid, name), 'w')
     for chunk in asset_file.chunks():
       file.write(chunk)
@@ -96,24 +96,18 @@ class Share(models.Model):
     share = Share.objects.create(
       shared_by_user_id=shared_by_userid
     )
-    
-    pdb.set_trace()  
-    print share.id
-    
-    print 'what now'
-    
+        
     #Replace with one query to do multiple inserts
     for user_id in shared_with_user_ids:
       share.shared_with_users.add(user_id)
-      
-    print 'stupid django'
      
     for shared_asset in shared_asset_ids:
       share.shared_assets.add(shared_asset)
      
 
     return share
-  
-  
-    
-	
+
+
+#class Comment(models.Model):
+  #user = models.ForeignKey('User');
+  #date_created = models.DateTimeField(auto_now_add=True)
