@@ -4,7 +4,6 @@ import datetime
 import forms
 import logging
 import time
-import pdb
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -294,7 +293,6 @@ def get_all_pictures(request):
 #
 ##
 def get_all_moments(request):
-    pdb.set_trace()
     if request.method == 'POST' and request.POST.get('uid', None):
         uid = request.POST.get('uid')
     
