@@ -145,4 +145,3 @@ class ShareComment(models.Model):
          comment = newcomment)
     
     return commentobj
-  

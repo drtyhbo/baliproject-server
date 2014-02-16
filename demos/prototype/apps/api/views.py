@@ -441,12 +441,3 @@ def add_share_comment(request):
         comment.save()
         
         return json_response(comment.id) 
-
-  
- 
-    
-    
-
-    
-    
-    
