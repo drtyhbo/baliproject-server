@@ -15,6 +15,15 @@ class User(models.Model):
   name = models.CharField(max_length=64, blank=True, null=True)
   email = models.CharField(max_length=128, blank=True, null=True)
   thumbnail_url = models.CharField(max_length=256, blank=True, null=True)
+  
+  def toJSON(self):
+    json = {
+        'id': self.id,
+        'name': self.name,
+        'email': self.email,
+        'thumbnailSrc': self.thumbnail_url
+      }
+    return json
 
 class Moment(models.Model):
   user = models.ForeignKey('User')
@@ -104,8 +113,20 @@ class Share(models.Model):
     for shared_asset in shared_asset_ids:
       share.shared_assets.add(shared_asset)
      
-
     return share
+  
+  def toJSON(self):
+    fields = []
+    for field in self._meta.fields:
+        fields.append(field.name)
+
+    d = {}
+    for attr in fields:
+        d[attr] = getattr(self, attr)
+
+    import simplejson
+    return simplejson.dumps(d)
+  
 
 
 #class Comment(models.Model):

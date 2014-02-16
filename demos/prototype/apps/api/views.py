@@ -2,16 +2,12 @@ import json
 import calendar
 import datetime
 import forms
-<<<<<<< HEAD
 from itertools import chain
-=======
-import logging
-import time
->>>>>>> 28202528b54e18157a193149b52decd10c59272f
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import HttpResponse
+from django.core import serializers
 from .models import Asset, Moment, Picture, User, Share
 
 from django.db.models.query import QuerySet
@@ -212,8 +208,8 @@ def get_moment_for_cluster(cluster):
     moment = Moment.objects.create(user=cluster[0].user,
         earliest_date=moments[0].earliest_date < earliest_date and \
             moments[0].earliest_date or earliest_date,
-        latest_date=moments[len(moments) - 1].latest_date > latest_date and \
-            moments[len(moments) - 1].latest_date or latest_date)
+        latest_date=moments[-1].latest_date > latest_date and \
+            moments[-1].latest_date or latest_date)
     Picture.objects.filter(moment__in=moments).update(moment=moment)
 
   return moment 
@@ -380,7 +376,7 @@ def get_all_shares(request):
         others_shares =  Share.objects.filter(Q(shared_with_users__id = user.id)) 
 
         shares = sorted(chain(user_shares, others_shares), 
-               key= lambda instance: instance.date_shared)
+               key= lambda instance: instance.date_shared, reverse=True)
         
         
         ret = []
@@ -388,21 +384,26 @@ def get_all_shares(request):
             ret_share = {
                 'id': share.id,
                 'dateShared': share.date_shared,
-                'sharedBy': share.shared_by_user_id,
+                'sharedBy': share.shared_by_user.toJSON(),
                 'sharedAssets': [],
                 'sharedWith': []
             }
+            
+            
+            #get assets
             assets = share.shared_assets.all()
             for asset in assets:
                 ret_share['sharedAssets'].append({
                   'id': asset.id,
                   'url': asset.get_asset_path()
                 })
+                
+            #get shared with
             users = share.shared_with_users.all()
             for user in users:
                 ret_share['sharedWith'].append({
                   'id': user.id,
-                  'url': user.thumbnail_url,
+                  'thumbnailSrc': user.thumbnail_url,
                 })
             ret.append(ret_share)
         return json_response(ret)

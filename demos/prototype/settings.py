@@ -11,10 +11,10 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'baliproject_demo',
-        'USER': 'baliproject',
-        'PASSWORD': '',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'USER': 'postgres',
+        'PASSWORD': 'Eclipse03',
         'HOST': '',
         'PORT': '',
     }
@@ -78,10 +78,6 @@ DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 AWS_QUERYSTRING_AUTH = False
 AWS_STORAGE_BUCKET_NAME = 'baliproject-demo'
 
-RAVEN_CONFIG = {
-    'dsn': 'http://52a7e9edebd04d569fb826e45b6286a2:0104e3006c7b48908fa4e597bcfb8b84@sentry.drtyhbo.net/1',
-}
-
 # List of finder classes that know how to find static files in
 # various locations.
 STATICFILES_FINDERS = (
@@ -129,10 +125,8 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
 
     'prototype.apps.api',
-
-    'raven.contrib.django.raven_compat',
-
-    'storages',
+	'south',
+    'storages'
 )
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
@@ -145,27 +139,12 @@ LOGGING = {
             '()': 'django.utils.log.RequireDebugFalse'
         }
     },
-<<<<<<< HEAD
     'handlers': {
         'mail_admins': {
             'level': 'ERROR',
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler'
         }
-=======
-    'sentry': {
-      'level': 'ERROR',
-      'class': 'raven.handlers.logging.SentryHandler',
-      'dsn': 'http://52a7e9edebd04d569fb826e45b6286a2:0104e3006c7b48908fa4e597bcfb8b84@sentry.drtyhbo.net/1',
-    },
-  },
-
-  'loggers': {
-    '': {
-      'handlers': ['console', 'sentry'],
-      'level': 'DEBUG',
-      'propagate': False,
->>>>>>> 28202528b54e18157a193149b52decd10c59272f
     },
     'loggers': {
         'django.request': {
@@ -179,12 +158,3 @@ LOGGING = {
       },
     }
 }
-
-# Set up raven to capture exceptions.
-from raven.contrib.django.raven_compat.models import client
-client.captureException()
-
-try:
-  from local_settings import *
-except ImportError:
-  pass

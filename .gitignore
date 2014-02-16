@@ -3,5 +3,6 @@
 *.pyc
 local_settings.py
 sentry.conf.py
+settings_prd.py
 .*
 \baliproject-server\demos\prototype\apps\api\migrations\
