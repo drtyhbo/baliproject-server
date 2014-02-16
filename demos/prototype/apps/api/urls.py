@@ -6,6 +6,8 @@ urlpatterns = patterns('prototype.apps.api.views',
   
   url(r'^user/add/$', 'add_user'),
   url(r'^user/get/$', 'get_user'),
+  url(r'^user/get/all/$', 'get_all_users'),
+  
   
   url(r'^picture/add/$', 'add_picture'),
   url(r'^picture/get/all/$', 'get_all_pictures'),

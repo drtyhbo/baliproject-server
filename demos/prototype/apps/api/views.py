@@ -139,8 +139,20 @@ def get_user(request):
       return json_response({
         'id': user.id,
         'name': user.name,
+        'uid': user.uid,
         'thumbnailSrc': None
       })
+  return json_response(False)
+
+def get_all_users(request):
+  if request.method == 'POST':
+    userobjects = User.objects.all()
+    users = [];
+    for userobj in userobjects:
+      users.append(
+        userobj.toJSON()
+      );
+    return json_response(users)
   return json_response(False)
 
 # #
@@ -441,3 +453,12 @@ def add_share_comment(request):
         comment.save()
         
         return json_response(comment.id) 
+
+  
+ 
+    
+    
+
+    
+    
+    
