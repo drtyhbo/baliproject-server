@@ -8,7 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import HttpResponse
 from django.core import serializers
-from .models import Asset, Moment, Picture, User, Share
+from .models import Asset, Moment, Picture, User, Share, ShareComment
 
 from django.db.models.query import QuerySet
     
@@ -386,7 +386,8 @@ def get_all_shares(request):
                 'dateShared': share.date_shared,
                 'sharedBy': share.shared_by_user.toJSON(),
                 'sharedAssets': [],
-                'sharedWith': []
+                'sharedWith': [],
+                'comments': []
             }
             
             
@@ -405,9 +406,43 @@ def get_all_shares(request):
                   'id': user.id,
                   'thumbnailSrc': user.thumbnail_url,
                 })
+                
+            #get comments
+            comments = ShareComment.objects.filter(share_id = share.id);
+            for comment in comments:
+              commenter = User.objects.get(id = comment.user_id) 
+              ret_share['comments'].append({
+                'id': comment.id,
+                'comment': comment.comment,
+                'commenter':  {
+                    'id': commenter.id,
+                    'name': commenter.name,
+                    'email': commenter.email,
+                    'thumbnailSrc': commenter.thumbnail_url
+                  }
+              })
+            
             ret.append(ret_share)
         return json_response(ret)
     return json_response(False)
+  
+def add_share_comment(request):
+    if request.method == 'POST' and \
+      request.POST.get('userId', None) and \
+      request.POST.get('shareId', None) and \
+      request.POST.get('comment', None):
+        
+        comment = ShareComment.create(
+            request.POST.get('userId'),
+            request.POST.get('shareId'),
+            request.POST.get('comment')
+            )
+        
+        comment.save()
+        
+        return json_response(comment.id) 
+
+  
  
     
     

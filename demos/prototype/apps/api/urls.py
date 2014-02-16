@@ -14,5 +14,6 @@ urlpatterns = patterns('prototype.apps.api.views',
   
   url(r'^share/add/$', 'add_share'),
   url(r'^share/get/all/$', 'get_all_shares'),
+  url(r'^share/add/comment/$', 'add_share_comment'),
   
 )

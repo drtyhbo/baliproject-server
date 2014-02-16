@@ -128,7 +128,21 @@ class Share(models.Model):
     return simplejson.dumps(d)
   
 
-
-#class Comment(models.Model):
-  #user = models.ForeignKey('User');
-  #date_created = models.DateTimeField(auto_now_add=True)
+#named ShareComment instead of Share in case other types of Comment 
+#models need to be created
+class ShareComment(models.Model):
+  user = models.ForeignKey('User');
+  share = models.ForeignKey('Share');
+  date_created = models.DateTimeField(auto_now_add=True)
+  comment = models.CharField(max_length=500, blank=True, null=True)
+  
+  @staticmethod
+  def create(userid, shareid, newcomment):
+    
+    commentobj = ShareComment.objects.create(
+         user_id =  userid,
+         share_id = shareid,
+         comment = newcomment)
+    
+    return commentobj
+  
