@@ -2,7 +2,12 @@ import json
 import calendar
 import datetime
 import forms
+<<<<<<< HEAD
 from itertools import chain
+=======
+import logging
+import time
+>>>>>>> 28202528b54e18157a193149b52decd10c59272f
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -207,8 +212,8 @@ def get_moment_for_cluster(cluster):
     moment = Moment.objects.create(user=cluster[0].user,
         earliest_date=moments[0].earliest_date < earliest_date and \
             moments[0].earliest_date or earliest_date,
-        latest_date=moments[-1].latest_date > latest_date and \
-            moments[-1].latest_date or latest_date)
+        latest_date=moments[len(moments) - 1].latest_date > latest_date and \
+            moments[len(moments) - 1].latest_date or latest_date)
     Picture.objects.filter(moment__in=moments).update(moment=moment)
 
   return moment 
