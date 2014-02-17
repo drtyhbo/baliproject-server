@@ -4,10 +4,10 @@ import datetime
 import forms
 from itertools import chain
 
+from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import HttpResponse
-from django.core import serializers
 from .models import Asset, Moment, Picture, User, Share, ShareComment
 
 from django.db.models.query import QuerySet
@@ -309,37 +309,47 @@ def get_all_pictures(request):
 #
 # #
 def get_all_moments(request):
-    if request.method == 'POST' and request.POST.get('uid', None):
-        uid = request.POST.get('uid')
-    
-        try:
-            user = User.objects.get(uid=uid)
-        except ObjectDoesNotExist:
-            user = None
+  if request.method == 'POST' and request.POST.get('uid', None):
+    uid = request.POST.get('uid')
+  
+    try:
+      user = User.objects.get(uid=uid)
+    except ObjectDoesNotExist:
+      user = None
 
-        if user:
-            ret = []
+    if user:
+      ret = []
+      last_moment = None
+      ret_moment = None
 
-            moments = Moment.objects.filter(user=user).order_by('-earliest_date')
-            for moment in moments:
-                ret_moment = {
-                    'id': moment.id,
-                    'timestamp': moment.earliest_date,
-                    'location': moment.location,
-                    'pictures': []
-                }
-                pictures = Picture.objects.filter(moment=moment).order_by('asset__date_taken')
-                for picture in pictures:
-                    ret_moment['pictures'].append({
-                        'id': picture.id,
-                        'assetId': picture.asset.id,
-                        'pictureSrc': picture.asset.get_asset_path(),
-                        'timestamp': picture.asset.date_taken,
-                        'thumbnailPictureSrc': picture.asset.get_asset_path()
-                    })
-                ret.append(ret_moment)
-            return json_response(ret)
-    return json_response(False)
+      pictures = Picture.objects\
+          .select_related('asset', 'asset__user', 'moment')\
+          .filter(user=user)\
+          .order_by('-moment__earliest_date', 'asset__date_taken')
+      for picture in pictures:
+        if picture.moment != last_moment:
+          if ret_moment:
+            ret.append(ret_moment)
+          ret_moment = {
+            'id': picture.moment.id,
+            'timestamp': picture.moment.earliest_date,
+            'location': picture.moment.location,
+            'pictures': []
+          }
+          last_moment = picture.moment
+        ret_moment['pictures'].append({
+          'id': picture.id,
+          'assetId': picture.asset.id,
+          'pictureSrc': picture.asset.get_asset_path(),
+          'timestamp': picture.asset.date_taken,
+          'thumbnailPictureSrc': picture.asset.get_asset_path()
+        })
+
+      if ret_moment:
+        ret.append(ret_moment)
+
+      return json_response(ret)
+  return json_response(False)
 
 # #
 #
