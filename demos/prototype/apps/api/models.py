@@ -19,6 +19,7 @@ class User(models.Model):
   def toJSON(self):
     json = {
         'id': self.id,
+        'uid': self.uid,
         'name': self.name,
         'email': self.email,
         'thumbnailSrc': self.thumbnail_url
@@ -145,3 +146,4 @@ class ShareComment(models.Model):
          comment = newcomment)
     
     return commentobj
+  
