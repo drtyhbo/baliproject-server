@@ -4,10 +4,10 @@ import datetime
 import forms
 from itertools import chain
 
-from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import HttpResponse
+from django.utils.timezone import utc
 from .models import Asset, Moment, Picture, User, Share, ShareComment
 
 from django.db.models.query import QuerySet
@@ -74,7 +74,8 @@ def get_asset(request):
     form = forms.GetAssetsForm(request.POST)
     if form.is_valid():
       uid = form.cleaned_data['uid']
-      ts = datetime.datetime.utcfromtimestamp(form.cleaned_data['ts'])
+      ts = datetime.datetime.utcfromtimestamp(form.cleaned_data['ts'])\
+              .replace(tzinfo=utc)
 
       # Only grab assets that were uploaded after the provided timestamp to
       # speed things up.
@@ -277,7 +278,8 @@ def get_all_pictures(request):
     form = forms.GetPicturesForm(request.POST)
     if form.is_valid():
       uid = form.cleaned_data['uid']
-      ts = datetime.datetime.utcfromtimestamp(form.cleaned_data['ts'])
+      ts = datetime.datetime.utcfromtimestamp(form.cleaned_data['ts'])\
+              .replace(tzinfo=utc)
     
       try:
         user = User.objects.get(uid=uid)
@@ -334,15 +336,14 @@ def get_all_moments(request):
             'id': picture.moment.id,
             'timestamp': picture.moment.earliest_date,
             'location': picture.moment.location,
-            'pictures': []
+            'assets': []
           }
           last_moment = picture.moment
-        ret_moment['pictures'].append({
-          'id': picture.id,
-          'assetId': picture.asset.id,
-          'pictureSrc': picture.asset.get_asset_path(),
-          'timestamp': picture.asset.date_taken,
-          'thumbnailPictureSrc': picture.asset.get_asset_path()
+        ret_moment['assets'].append({
+          'id': picture.asset.id,
+          'createdBy': picture.asset.user_id,
+          'url': picture.asset.get_asset_path(),
+          'timestamp': picture.asset.date_taken
         })
 
       if ret_moment:
@@ -418,7 +419,9 @@ def get_all_shares(request):
             for asset in assets:
                 ret_share['sharedAssets'].append({
                   'id': asset.id,
-                  'url': asset.get_asset_path()
+                  'createdBy': asset.user_id,
+                  'url': asset.get_asset_path(),
+                  'timestamp': asset.date_taken
                 })
                 
             #get shared with
