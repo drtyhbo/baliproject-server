@@ -79,7 +79,9 @@ def get_asset(request):
 
       # Only grab assets that were uploaded after the provided timestamp to
       # speed things up.
-      assets = Asset.objects.filter(user__uid=uid, date_uploaded__gt=ts).order_by('-date_uploaded')
+      assets = Asset.objects.select_related('user')\
+          .filter(user__uid=uid, date_uploaded__gt=ts)\
+          .order_by('-date_uploaded')
 
       # Always return the timestamp and list of assets to simplify the
       # frontend code.
@@ -88,15 +90,13 @@ def get_asset(request):
         'assets': []
       }
       if assets.count() > 0:
-        ret['ts'] = assets[0].date_uploaded
+        ret['ts'] = assets[0].date_uploaded\
+            .replace(tzinfo=utc)
         for asset in assets:
           ret['assets'].append({
             'id': asset.id,
-            'latitude': asset.latitude,
-            'longitude': asset.longitude,
-            'dateTaken': asset.date_taken,
-            'url': asset.get_asset_path(),
-            'dateUploaded': asset.date_uploaded
+            'timestamp': asset.date_taken,
+            'url': asset.get_asset_path()
           })
       return json_response(ret)
   return json_response(False)
@@ -341,9 +341,6 @@ def get_all_moments(request):
           last_moment = picture.moment
         ret_moment['assets'].append({
           'id': picture.asset.id,
-          'createdBy': picture.asset.user_id,
-          'url': picture.asset.get_asset_path(),
-          'timestamp': picture.asset.date_taken
         })
 
       if ret_moment:
