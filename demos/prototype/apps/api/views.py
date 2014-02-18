@@ -8,6 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import HttpResponse
 from django.core import serializers
+from django.utils.timezone import utc
 from .models import Asset, Moment, Picture, User, Share, ShareComment
 
 from django.db.models.query import QuerySet
@@ -74,7 +75,8 @@ def get_asset(request):
     form = forms.GetAssetsForm(request.POST)
     if form.is_valid():
       uid = form.cleaned_data['uid']
-      ts = datetime.datetime.utcfromtimestamp(form.cleaned_data['ts'])
+      ts = datetime.datetime.utcfromtimestamp(form.cleaned_data['ts'])\
+              .replace(tzinfo=utc)
 
       # Only grab assets that were uploaded after the provided timestamp to
       # speed things up.
@@ -265,7 +267,8 @@ def get_all_pictures(request):
     form = forms.GetPicturesForm(request.POST)
     if form.is_valid():
       uid = form.cleaned_data['uid']
-      ts = datetime.datetime.utcfromtimestamp(form.cleaned_data['ts'])
+      ts = datetime.datetime.utcfromtimestamp(form.cleaned_data['ts'])\
+              .replace(tzinfo=utc)
     
       try:
         user = User.objects.get(uid=uid)
