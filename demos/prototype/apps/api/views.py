@@ -341,6 +341,9 @@ def get_all_moments(request):
           last_moment = picture.moment
         ret_moment['assets'].append({
           'id': picture.asset.id,
+          'createdBy': picture.asset.user_id,
+          'url': picture.asset.get_asset_path(),
+          'timestamp': picture.asset.date_taken
         })
 
       if ret_moment:
@@ -381,71 +384,50 @@ def add_share(request):
 
 def get_all_shares(request):
     if request.method == 'POST' and request.POST.get('uid', None):
-        uid = request.POST.get('uid')
-    
+      
+        useruid = request.POST.get('uid')
         try:
-            user = User.objects.get(uid=uid)
+          user = User.objects.get(uid=useruid)
         except ObjectDoesNotExist:
-            user = None
-            
+          user = None
+          
         if user == None:
           return json_response(False)
-
-        
-        user_shares = Share.objects.filter(Q(shared_by_user_id=user.id)) 
-        others_shares =  Share.objects.filter(Q(shared_with_users__id = user.id)) 
-
-        shares = sorted(chain(user_shares, others_shares), 
-               key= lambda instance: instance.date_shared, reverse=True)
-        
-        
-        ret = []
+      
+        userid = user.id
+       
+        shares = Share.objects\
+          .prefetch_related('shared_with_users','shared_assets', 'shared_assets__user')\
+          .select_related('shared_by_user')\
+          .filter(Q(shared_with_users__id = userid) | Q(shared_by_user__id = userid))\
+          .order_by('-date_shared');
+          
+        ret_shares = []
         for share in shares:
-            ret_share = {
-                'id': share.id,
-                'dateShared': share.date_shared,
-                'sharedBy': share.shared_by_user.toJSON(),
-                'sharedAssets': [],
-                'sharedWith': [],
-                'comments': []
-            }
+          #create share
+          current_share = {
+              'id': share.id,
+              'dateShared': share.date_shared,
+              'sharedBy': share.shared_by_user.toJSON(),
+              'sharedAssets': [],
+              'sharedWith': [],
+              'comments': []
+          }
+          #add user
+          for user in share.shared_with_users.all():
+            current_share['sharedWith'].append(user.toJSON())
+          
+          #add assets
+          for asset in share.shared_assets.all():
+            current_share['sharedAssets'].append({
+                'id': asset.id,
+                'createdBy': asset.user_id,
+                'url': asset.get_asset_path(),
+                'timestamp': asset.date_taken
+              });
             
-            
-            #get assets
-            assets = share.shared_assets.all()
-            for asset in assets:
-                ret_share['sharedAssets'].append({
-                  'id': asset.id,
-                  'createdBy': asset.user_id,
-                  'url': asset.get_asset_path(),
-                  'timestamp': asset.date_taken
-                })
-                
-            #get shared with
-            users = share.shared_with_users.all()
-            for user in users:
-                ret_share['sharedWith'].append({
-                  'id': user.id,
-                  'thumbnailSrc': user.thumbnail_url,
-                })
-                
-            #get comments
-            comments = ShareComment.objects.filter(share_id = share.id);
-            for comment in comments:
-              commenter = User.objects.get(id = comment.user_id) 
-              ret_share['comments'].append({
-                'id': comment.id,
-                'comment': comment.comment,
-                'commenter':  {
-                    'id': commenter.id,
-                    'name': commenter.name,
-                    'email': commenter.email,
-                    'thumbnailSrc': commenter.thumbnail_url
-                  }
-              })
-            
-            ret.append(ret_share)
-        return json_response(ret)
+          ret_shares.append(current_share)
+        return json_response(ret_shares)
     return json_response(False)
   
 def add_share_comment(request):
