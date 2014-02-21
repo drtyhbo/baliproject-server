@@ -395,14 +395,16 @@ def get_all_shares(request):
           return json_response(False)
       
         userid = user.id
-       
+        
         shares = Share.objects\
           .prefetch_related('shared_with_users','shared_assets', 'shared_assets__user')\
           .select_related('shared_by_user')\
           .filter(Q(shared_with_users__id = userid) | Q(shared_by_user__id = userid))\
-          .order_by('-date_shared');
-          
-        ret_shares = []
+          .distinct()\
+          .order_by('date_shared');
+        
+        ret_shares = {}
+        share_ids = []
         for share in shares:
           #create share
           current_share = {
@@ -416,7 +418,8 @@ def get_all_shares(request):
           #add user
           for user in share.shared_with_users.all():
             current_share['sharedWith'].append(user.toJSON())
-          
+            
+
           #add assets
           for asset in share.shared_assets.all():
             current_share['sharedAssets'].append({
@@ -426,8 +429,25 @@ def get_all_shares(request):
                 'timestamp': asset.date_taken
               });
             
-          ret_shares.append(current_share)
-        return json_response(ret_shares)
+          ret_shares[share.id]= current_share;
+          share_ids.append(share.id)
+        
+        #get comments
+        comments = ShareComment.objects.filter(share__id__in= share_ids)\
+          .select_related('user');
+        for comment in comments:
+          ret_shares[comment.share_id]['comments'].append({
+                'id': comment.id,
+                'comment': comment.comment,
+                'commenter':  {
+                    'id': comment.user.id,
+                    'name': comment.user.name,
+                    'email': comment.user.email,
+                    'thumbnailSrc': comment.user.thumbnail_url
+                  }})
+           
+        
+        return json_response(sorted(ret_shares.values(), key=lambda x: x['dateShared'], reverse=True))
     return json_response(False)
   
 def add_share_comment(request):
